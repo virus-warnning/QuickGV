@@ -110,10 +110,10 @@ class QuickGV {
 			$unit_ch = array('B','KB','MB');
 
 			$table_html = array();
-			$table_html[] = sprintf('<tr><th>檔案路徑</th><td style="text-align:left;">%s</td></tr>', $svgurl);
-			$table_html[] = sprintf('<tr><th>檔案大小</th><td style="text-align:left;">%.2f %s</td></tr>', $size, $unit_ch[$unit_lv]);
-			$table_html[] = sprintf('<tr><th>轉檔時間</th><td style="text-align:left;">%.3f 秒</td></tr>', $elapsed);
-			$table_html[] = sprintf('<tr><th>Graphviz 版本</th><td style="text-align:left;">%s</td></tr>', $verstr);
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.2f %s</td></tr>', wfMessage('filesize')->plain(), $size, $unit_ch[$unit_lv]);
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
 			$table_html = implode("\n",$table_html);
 			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
