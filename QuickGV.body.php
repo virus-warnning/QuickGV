@@ -83,6 +83,8 @@ class QuickGV {
 		unlink($infile);
 
 		// 產生 svg 圖檔
+		// stdout
+		// stderr
 		$cmd = sprintf('dot -Tsvg %s > %s',
 			escapeshellarg($dotfile),
 			escapeshellarg($svgfile)
@@ -92,15 +94,17 @@ class QuickGV {
 		// TODO: dot 錯誤處理
 
 		// 輸出
-		$html = sprintf('<p><img src="%s" style="border:1px solid #777;" /></p>', $svgurl);
+		$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
 
 		if ($showmeta) {
 			$elapsed = microtime(true) - $beg_time;
 
+			// 取 Graphviz 版本資訊 (需要獨立 function)
 			$verstr = system('dot -V 2>&1');
 			$verpos = strpos($verstr,'version')+8;
 			$verstr = substr($verstr,$verpos);
 
+			// 取人性化的檔案大小 (需要獨立 function)
 			$unit_lv = 0;
 			$size = filesize($svgfile);
 			while ($size>=1024 && $unit_lv<=2) {
@@ -114,7 +118,7 @@ class QuickGV {
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.2f %s</td></tr>', wfMessage('filesize')->plain(), $size, $unit_ch[$unit_lv]);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
-			$table_html = implode("\n",$table_html);
+			$table_html = implode("\n", $table_html);
 			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
 			unset($table_html);
