@@ -1,11 +1,20 @@
 <?php
 /**
- * Graphviz 快速製圖
+ * Graphviz 快速製圖器
+ *
+ * @since  0.1.0
+ * @author Raymond Wu https://github.com/virus-warnning
  */
 class QuickGV {
 
+	/* 錯誤訊息暫存區 */
+	private static $errmsgs = array();
+
 	/**
-	 * 設定函數鉤 (由 MediaWiki 觸發)
+	 * 掛載點設定 (由 MediaWiki 觸發)
+	 *
+	 * @since 0.1.0
+	 * @param $parser MediaWiki 的語法處理器
 	 */
 	public static function init(&$parser) {
 		$parser->setHook('quickgv', array('QuickGV', 'render'));
@@ -13,10 +22,13 @@ class QuickGV {
 	}
 
 	/**
-	 * 製圖起點 (由 MediaWiki 觸發)
+	 * 製圖 (由 MediaWiki 觸發)
 	 *
-	 * @param $in MediaWiki 寫的語法內文
-	 * @param $param 參數
+	 * @since 0.1.0
+	 * @param $in     MediaWiki 寫的語法內文
+	 * @param $param  標籤內的參數
+	 * @param $parser MediaWiki 的語法處理器
+	 * @param $frame  不知道是啥小
 	 */
 	public static function render($in, $param=array(), $parser=null, $frame=false) {
 		global $IP, $wgScriptPath;
@@ -114,23 +126,56 @@ class QuickGV {
 	}
 
 	/**
-	 * 檢查參數正確性
+	 * 增加錯誤訊息
+	 *
+	 * @since 0.1.1
+	 * @param $msg 錯誤訊息
+	 */
+	public static function addError($msg) {
+		self::$errmsgs[] = $msg;
+	}
+
+	/**
+	 * 顯示錯誤訊息
+	 *
+	 * @since 0.1.1
+	 * @param $msg 錯誤訊息，如果沒有提供，會使用 addError 增加的錯誤訊息
+	 */
+	public static function showError($msg='') {
+		// 內建 CSS:
+		// .errorbox   - MW 顯示錯誤訊息的 CSS class
+		// .warningbox - MW 顯示警示訊息的 CSS class
+		// 這兩個都有 float: left; 用完後需要 clear 一下
+		// 這些 CSS 真是夠醜的，以後要修一下
+
+		if ($msg==='') {
+			if (count(self::$errmsgs)>0) {
+				foreach (self::$errmsgs as $cached_msg) {
+					$html .= "<p>$cached_msg</p>";
+				}
+			} else {
+				$html = "<p>Test</p>";
+			}
+		} else {
+			$html = "<p>$msg</p>";
+		}
+
+		$html = sprintf('<div class="warningbox" style="margin:0;">%s</div>',$html);
+		$html .= '<div style="clear:both;"></div>';
+		return $html;
+	}
+
+	/**
+	 * 檢查參數
 	 */
 	public static function validateParam() {
 
 	}
 
 	/**
-	 * 檢查環境正確性
+	 * 檢查環境
 	 */
 	public static function validateRequirements() {
-
-	}
-
-	/**
-	 * 製圖
-	 */
-	public static function buildGraph() {
 
 	}
 
