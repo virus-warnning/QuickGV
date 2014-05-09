@@ -82,16 +82,23 @@ class QuickGV {
 		system($cmd);
 		unlink($infile);
 
-		// 產生 svg 圖檔
-		// stdout
-		// stderr
-		$cmd = sprintf('dot -Tsvg %s > %s',
-			escapeshellarg($dotfile),
-			escapeshellarg($svgfile)
+		// 執行 dot，產生 svg 圖檔
+		$errfile = tempnam($imgdir,'stderr-');
+		$cmd = sprintf('dot -Tsvg %s > %s 2> %s',
+			escapeshellarg($dotfile), // stdin
+			escapeshellarg($svgfile), // stdout
+			escapeshellarg($errfile)  // stderr
 		);
-		system($cmd);
+		system($cmd, $status);
 
-		// TODO: dot 錯誤處理
+		// dot 指令的錯誤處理
+		if ($status!=0) $errstr = file_get_contents($errfile);
+		unlink($errfile);
+		if ($status!=0) {
+			$html = self::showError($errstr);
+			$html .= sprintf('<pre>%s</pre>', file_get_contents($dotfile));
+			return $html;
+		}
 
 		// 輸出
 		$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
@@ -169,7 +176,7 @@ class QuickGV {
 			$html = "<p>$msg</p>";
 		}
 
-		$html = sprintf('<div class="warningbox" style="margin:0;">%s</div>',$html);
+		$html = sprintf('<div class="errorbox" style="margin:0;">%s</div>',$html);
 		$html .= '<div style="clear:both;"></div>';
 		return $html;
 	}
