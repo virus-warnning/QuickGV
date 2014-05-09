@@ -3,7 +3,7 @@ $wgExtensionCredits['parserhook'][] = array(
 	'path'           => __FILE__,
 	'name'           => 'QuickGV',
 	'author'         => '[https://github.com/virus-warnning Raymond Wu]',
-	'url'            => 'http://raymondwu.i234.me',
+	'url'            => 'https://www.mediawiki.org/wiki/Extension:QuickGV',
 	'descriptionmsg' => 'quickgv-desc',
 	'version'        => '0.1.0',
 );
