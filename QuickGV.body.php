@@ -98,7 +98,7 @@ class QuickGV {
 			$elapsed = microtime(true) - $beg_time;
 
 			$verstr = system('dot -V 2>&1');
-			$verpos = strpos($verstr,'version');
+			$verpos = strpos($verstr,'version')+8;
 			$verstr = substr($verstr,$verpos);
 
 			$unit_lv = 0;
@@ -109,10 +109,15 @@ class QuickGV {
 			}
 			$unit_ch = array('B','KB','MB');
 
-			$html .= sprintf('<p>檔案路徑: %s</p>', $svgurl);
-			$html .= sprintf('<p>檔案大小: %.2f %s</p>', $size, $unit_ch[$unit_lv]);
-			$html .= sprintf('<p>轉檔時間: %.3f 秒</p>', $elapsed);
-			$html .= sprintf('<p>Graphviz 版本: %s</p>', $verstr);
+			$table_html = array();
+			$table_html[] = sprintf('<tr><th>檔案路徑</th><td style="text-align:left;">%s</td></tr>', $svgurl);
+			$table_html[] = sprintf('<tr><th>檔案大小</th><td style="text-align:left;">%.2f %s</td></tr>', $size, $unit_ch[$unit_lv]);
+			$table_html[] = sprintf('<tr><th>轉檔時間</th><td style="text-align:left;">%.3f 秒</td></tr>', $elapsed);
+			$table_html[] = sprintf('<tr><th>Graphviz 版本</th><td style="text-align:left;">%s</td></tr>', $verstr);
+			$table_html = implode("\n",$table_html);
+			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
+			$html .= $table_html;
+			unset($table_html);
 		}
 
 		if ($showdot) {
