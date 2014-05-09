@@ -37,6 +37,11 @@ class QuickGV {
 		$beg_time = microtime(true);
 
 		// TODO: 參數檢查
+		//self::addError('baga');
+		self::validateParam($param);
+		if (count(self::$errmsgs)>0) {
+			return self::showError();
+		}
 
 		// TODO: in 上限管制
 
@@ -169,6 +174,8 @@ class QuickGV {
 				foreach (self::$errmsgs as $cached_msg) {
 					$html .= "<p>$cached_msg</p>";
 				}
+				//$html .= sprintf("<p>%s</p>",self::$errmsgs[1]);
+				//$html = sprintf("<p>%d</p>",count(self::$errmsgs));
 			} else {
 				$html = "<p>Test</p>";
 			}
@@ -184,8 +191,34 @@ class QuickGV {
 	/**
 	 * 檢查參數
 	 */
-	public static function validateParam() {
+	public static function validateParam(&$params) {
+		$patterns = array(
+			'bool' => '/^(true|false)$/',
+			'name' => '/^[a-zA-Z0-9_]+$/',
+		);
 
+		$descs = array(
+			'bool' => 'true or false',
+			'name' => 'these characters a~z, A~Z or 0~9',
+		);
+
+		$formats = array(
+			'name' => 'name',
+			'showdot' => 'bool',
+			'showmeta' => 'bool',
+		);
+
+		foreach ($formats as $prmk => $patk) {
+			if (isset($params[$prmk])) {
+				$param = $params[$prmk];
+				$pattern = $patterns[$patk];
+				if (!preg_match($pattern,$param)) {
+					// TODO: 之後需要翻譯一下
+					$msg = sprintf('Attribute %s="%s" needs %s.', $prmk, $param, $descs[$patk]);
+					self::addError($msg);
+				}
+			}
+		}
 	}
 
 	/**
