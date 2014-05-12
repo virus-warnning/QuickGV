@@ -36,10 +36,15 @@ class QuickGV {
 		// 計時開始，效能計算用
 		$beg_time = microtime(true);
 
-		// TODO: 參數檢查
-		//self::addError('baga');
+		// 參數檢查
 		self::validateParam($param);
 		if (count(self::$errmsgs)>0) {
+			return self::showError();
+		}
+
+		// 環境檢查
+		$dotcmd = self::findDot();
+		if ($dotcmd=='') {
 			return self::showError();
 		}
 
@@ -48,17 +53,8 @@ class QuickGV {
 		if (isset($param['name'])) $gname = trim($param['name']);
 		if (!isset($gname) || $gname=='') $gname = 'G';
 
-		if (isset($param['showmeta']) && $param['showmeta']==='true') {
-			$showmeta = true;
-		} else {
-			$showmeta = false;
-		}
-
-		if (isset($param['showdot']) && $param['showdot']==='true') {
-			$showdot = true;
-		} else {
-			$showdot = false;
-		}
+		$showmeta = self::getParam($param, 'showmeta', 'false');
+		$showdot  = self::getParam($param, 'showdot' , 'false');
 
 		$prefix = $parser->mTitle;
 		$prefix = str_replace(array('\\','/',' '), '_', $prefix);
@@ -89,7 +85,8 @@ class QuickGV {
 
 		// 執行 dot，產生 svg 圖檔
 		$errfile = tempnam($imgdir,'stderr-');
-		$cmd = sprintf('dot -Tsvg %s > %s 2> %s',
+		$cmd = sprintf('%s -Tsvg %s > %s 2> %s',
+			escapeshellarg($dotcmd),  // dot fullpath
 			escapeshellarg($dotfile), // stdin
 			escapeshellarg($svgfile), // stdout
 			escapeshellarg($errfile)  // stderr
@@ -108,7 +105,7 @@ class QuickGV {
 		// 輸出
 		$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
 
-		if ($showmeta) {
+		if ($showmeta==='true') {
 			$elapsed = microtime(true) - $beg_time;
 
 			// 取 Graphviz 版本資訊 (需要獨立 function)
@@ -129,14 +126,16 @@ class QuickGV {
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.2f %s</td></tr>', wfMessage('filesize')->plain(), $size, $unit_ch[$unit_lv]);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
 			$table_html = implode("\n", $table_html);
 			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
 			unset($table_html);
 		}
 
-		if ($showdot) {
+		if ($showdot==='true') {
 			$html .= sprintf('<pre>%s</pre>', file_get_contents($dotfile));
 		}
 
@@ -222,10 +221,48 @@ class QuickGV {
 	}
 
 	/**
-	 * 檢查環境
+	 * 檢查 dot 指令是否存在
+	 *
+	 * return string dot 指令的完整路徑 (目前不進行 realpath 處理)
 	 */
-	public static function validateRequirements() {
+	public static function findDot() {
+		$dotpath = exec('which dot'); // if not found, return string(0) ""
+		$dotpath = '';
+		if ($dotpath==='') {
+			$guesslist = array(
+				'/usr/bin/dot',
+				'/usr/local/bin/dot'
+			);
+			foreach ($guesslist as $guessitem) {
+				if (file_exists($guessitem)) {
+					$dotpath = $guessitem;
+					break;
+				}
+			}
+		}
 
+		if ($dotpath==='') {
+			self::addError('Graphviz is not installed or not found.');
+			return '';
+		}
+
+		if (!is_executable($dotpath)) $dotpath = '';
+
+		if ($dotpath==='') {
+			self::addError('Graphviz is not executable.');
+			return '';
+		}
+
+		return $dotpath;
+	}
+
+	/**
+	 * 取得設定值，如果沒提供就使用預設值
+	 *
+	 */
+	public static function getParam($params, $key, $default='') {
+		if (isset($params[$key])) return $params[$key];
+		return $default;
 	}
 
 }

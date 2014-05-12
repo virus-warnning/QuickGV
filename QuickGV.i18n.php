@@ -7,7 +7,9 @@ $messages['en'] = array(
 	'filesize' => 'File Size',
 	'exectime' => 'Execution Time',
 	'seconds'  => 'second(s)',
+	'graphviz-path' => 'Graphviz Path',
 	'graphviz-ver' => 'Graphviz Version',
+	'graphviz-ref' => 'Reference',
 );
 
 $messages['zh-hant'] = array(
@@ -16,5 +18,7 @@ $messages['zh-hant'] = array(
 	'filesize' => '檔案大小',
 	'exectime' => '轉圖時間',
 	'seconds'  => '秒',
+	'graphviz-path' => 'Graphviz 路徑',
 	'graphviz-ver' => 'Graphviz 版本',
+	'graphviz-ref' => '參考文件',
 );
