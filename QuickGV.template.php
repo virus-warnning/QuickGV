@@ -5,7 +5,6 @@ if ($gname=='') $gname = 'G';
 
 // 取得 graph 資料
 $gdata = trim(file_get_contents('php://stdin'));
-if ($gdata=='') $gdata = 'A -> {B C};';
 
 // 取得 graph 用途
 // TODO: ...
@@ -36,7 +35,20 @@ digraph <?php echo $gname; ?> {
 		fontsize=10
 	];
 
+	<?php if ($gdata==''): ?>
+
+	// default graph
+	A [label="if (Z>B)"];
+	B [label="Banana"];
+	C [label="Sunflower"];
+	A -> B [label="yes"];
+	A -> C [label="no"];
+
+	<?php else: ?>
+
 	// nodes, edges, and clusters
 	<?php echo $gdata; ?>
+
+	<?php endif; ?>
 
 }
