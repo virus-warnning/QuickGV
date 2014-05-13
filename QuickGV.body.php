@@ -10,6 +10,9 @@ class QuickGV {
 	/* 錯誤訊息暫存區 */
 	private static $errmsgs = array();
 
+	/* 輸入內容上限 (1M) */
+	const MAX_INPUTSIZE = 1048576;
+
 	/**
 	 * 掛載點設定 (由 MediaWiki 觸發)
 	 *
@@ -48,11 +51,13 @@ class QuickGV {
 			return self::showError();
 		}
 
-		// TODO: in 上限管制
+		// $in 上限管制
+		if (strlen($in)>self::MAX_INPUTSIZE) {
+			$msg = sprintf('Input data exceed %s.', self::getFriendlySize(self::MAX_INPUTSIZE));
+			return self::showError($msg);
+		}
 
-		if (isset($param['name'])) $gname = trim($param['name']);
-		if (!isset($gname) || $gname=='') $gname = 'G';
-
+		$gname    = self::getParam($param, 'name'    , 'G');
 		$showmeta = self::getParam($param, 'showmeta', 'false');
 		$showdot  = self::getParam($param, 'showdot' , 'false');
 
@@ -113,18 +118,12 @@ class QuickGV {
 			$verpos = strpos($verstr,'version')+8;
 			$verstr = substr($verstr,$verpos);
 
-			// 取人性化的檔案大小 (需要獨立 function)
-			$unit_lv = 0;
-			$size = filesize($svgfile);
-			while ($size>=1024 && $unit_lv<=2) {
-				$size /= 1024;
-				$unit_lv++;
-			}
-			$unit_ch = array('B','KB','MB');
+			// 取人性化的檔案大小
+			$size = self::getFriendlySize(filesize($svgfile));
 
 			$table_html = array();
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.2f %s</td></tr>', wfMessage('filesize')->plain(), $size, $unit_ch[$unit_lv]);
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filesize')->plain(), $size);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
@@ -173,8 +172,6 @@ class QuickGV {
 				foreach (self::$errmsgs as $cached_msg) {
 					$html .= "<p>$cached_msg</p>";
 				}
-				//$html .= sprintf("<p>%s</p>",self::$errmsgs[1]);
-				//$html = sprintf("<p>%d</p>",count(self::$errmsgs));
 			} else {
 				$html = "<p>Test</p>";
 			}
@@ -189,6 +186,8 @@ class QuickGV {
 
 	/**
 	 * 檢查參數
+	 *
+	 * @param $params 設定值組
 	 */
 	public static function validateParam(&$params) {
 		$patterns = array(
@@ -223,7 +222,7 @@ class QuickGV {
 	/**
 	 * 檢查 dot 指令是否存在
 	 *
-	 * return string dot 指令的完整路徑 (目前不進行 realpath 處理)
+	 * @return dot 指令的完整路徑 (目前不進行 realpath 處理)
 	 */
 	public static function findDot() {
 		$dotpath = exec('which dot'); // if not found, return string(0) ""
@@ -259,10 +258,37 @@ class QuickGV {
 	/**
 	 * 取得設定值，如果沒提供就使用預設值
 	 *
+	 * @param  $params  設定值組
+	 * @param  $key     設定值名稱
+	 * @param  $default 預設值
+	 * @return 預期結果
 	 */
-	public static function getParam($params, $key, $default='') {
-		if (isset($params[$key])) return $params[$key];
+	public static function getParam(&$params, $key, $default='') {
+		if (isset($params[$key])) {
+			if (trim($params[$key])!=='') return $params[$key];
+		}
 		return $default;
+	}
+
+	/**
+	 * 取得人性化的檔案大小
+	 *
+	 * @param $size 位元組數
+	 */
+	public static function getFriendlySize($size) {
+		static $unit_ch = array('B','KB','MB');
+
+		$unit_lv = 0;
+		while ($size>=1024 && $unit_lv<=2) {
+			$size /= 1024;
+			$unit_lv++;
+		}
+		
+		if ($unit_lv==0) {
+			return sprintf('%d %s', $size, $unit_ch[$unit_lv]);
+		} else {
+			return sprintf('%.2f %s', $size, $unit_ch[$unit_lv]);
+		}
 	}
 
 }
