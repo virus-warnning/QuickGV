@@ -2,7 +2,7 @@
 /**
  * Graphviz 快速製圖器
  *
- * @since  0.1.0
+ * @since  0.2.0
  * @author Raymond Wu https://github.com/virus-warnning
  */
 class QuickGV {
@@ -12,6 +12,7 @@ class QuickGV {
 
 	/* 輸入內容上限 (1M) */
 	const MAX_INPUTSIZE = 1048576;
+	const VERSION = '0.2.0';
 
 	/**
 	 * 掛載點設定 (由 MediaWiki 觸發)
