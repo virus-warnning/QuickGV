@@ -10,6 +10,7 @@ $messages['en'] = array(
 	'graphviz-path' => 'Graphviz Path',
 	'graphviz-ver' => 'Graphviz Version',
 	'graphviz-ref' => 'Reference',
+	'quickgv-ver' => 'QuickGV Version',
 );
 
 $messages['zh-hant'] = array(
@@ -21,4 +22,5 @@ $messages['zh-hant'] = array(
 	'graphviz-path' => 'Graphviz 路徑',
 	'graphviz-ver' => 'Graphviz 版本',
 	'graphviz-ref' => '參考文件',
+	'quickgv-ver' => 'QuickGV 版本',
 );

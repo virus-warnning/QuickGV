@@ -10,9 +10,10 @@ class QuickGV {
 	/* 錯誤訊息暫存區 */
 	private static $errmsgs = array();
 
+	private static $version;
+
 	/* 輸入內容上限 (1M) */
 	const MAX_INPUTSIZE = 1048576;
-	const VERSION = '0.2.0';
 
 	/**
 	 * 掛載點設定 (由 MediaWiki 觸發)
@@ -21,7 +22,18 @@ class QuickGV {
 	 * @param $parser MediaWiki 的語法處理器
 	 */
 	public static function init(&$parser) {
+		// 取得版本字串
+		global $wgExtensionCredits;
+		foreach ($wgExtensionCredits['parserhook'] as $ext) {
+			if ($ext['name']==='QuickGV') {
+				self::$version = $ext['version'];
+				break;
+			}
+		}
+
+		// 設定函數鉤
 		$parser->setHook('quickgv', array('QuickGV', 'render'));
+
 		return true;
 	}
 
@@ -129,6 +141,7 @@ class QuickGV {
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
 			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
+			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('quickgv-ver')->plain(), self::$version);
 			$table_html = implode("\n", $table_html);
 			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
@@ -226,19 +239,23 @@ class QuickGV {
 	 * @return dot 指令的完整路徑 (目前不進行 realpath 處理)
 	 */
 	public static function findDot() {
-		$dotpath = exec('which dot'); // if not found, return string(0) ""
-		$dotpath = '';
-		if ($dotpath==='') {
-			$guesslist = array(
-				'/usr/bin/dot',
-				'/usr/local/bin/dot'
-			);
-			foreach ($guesslist as $guessitem) {
-				if (file_exists($guessitem)) {
-					$dotpath = $guessitem;
-					break;
+		if (PHP_OS!=='WINNT') {
+			$dotpath = exec('which dot'); // if not found, return string(0) ""
+			if ($dotpath==='') {
+				$guesslist = array(
+					'/usr/bin/dot',
+					'/usr/local/bin/dot'
+				);
+				foreach ($guesslist as $guessitem) {
+					if (file_exists($guessitem)) {
+						$dotpath = $guessitem;
+						break;
+					}
 				}
 			}
+		} else {
+			// for Windows 7
+			$dotpath = exec('where dot.exe');
 		}
 
 		if ($dotpath==='') {
