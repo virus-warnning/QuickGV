@@ -11,7 +11,7 @@ class QuickGV {
 	const MAX_INPUTSIZE = 1048576;
 
 	/* 自定義 dot 路徑 */
-	const DOT_PATH = '';
+	const DOT_PATH = 'dot2';
 	//const DOT_PATH = 'C:\Program Files (x86)\Graphviz2.38\bin\dot';
 
 	/* 自定義 php 路徑 */
@@ -264,21 +264,48 @@ class QuickGV {
 				// [Gg]raphviz\s?2\.\d+\bin\dot
 				$exec_path = exec("where $exec_name");
 			}
-
-			if ($exec_path==='') {
-				self::addError("$exec_name is not installed or not found.");
-				return '';
-			}
-
-			if (!is_executable($exec_path)) {
-				self::addError("$exec_path is not executable.");
-				return '';
-			}
-
-			return $exec_path;
 		} else {
-			return $exec_custom;
+			$exec_path = $exec_custom;
 		}
+
+		if ($exec_path==='' || !file_exists($exec_path)) {
+			if ($exec_name==='dot') $exec_name = 'Graphviz';
+			self::addError("$exec_name is not installed.");
+
+			// How to install graphviz
+			$os = PHP_OS;
+			switch ($os) {
+				case 'Darwin':
+					$url = 'http://brew.sh';
+					self::addError('Run the command to install:');
+					self::addError('<blockquote>brew install graphviz</blockquote>');
+					self::addError(sprintf('If you didn\'t install Homebrew yet, see <a href="%1$s">%1$s</a>.', $url));
+					break;
+				case 'WINNT':
+					$url = 'http://www.graphviz.org/Download_windows.php';
+					self::addError(sprintf('Click here to download installer: <a href="%1$s">%1$s</a>', $url));
+					break;
+				case 'Linux':
+					self::addError('For CentOS users, run the command to install:');
+					self::addError('<blockquote>yum install graphviz</blockquote>');
+					self::addError('For Ubuntu or Debian users, run the command to install:');
+					self::addError('<blockquote>sudo apt-get install graphviz</blockquote>');
+					break;
+				case 'FreeBSD':
+					self::addError('Run the command to install:');
+					self::addError('<blockquote>pkg_add -r graphviz</blockquote>');
+					break;
+			}
+
+			return '';
+		}
+
+		if (!is_executable($exec_path)) {
+			self::addError("$exec_path is not executable.");
+			return '';
+		}
+
+		return $exec_path;
 	}
 
 	/**
