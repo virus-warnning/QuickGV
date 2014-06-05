@@ -24,7 +24,9 @@ digraph <?php echo $gname; ?> {
 		height = 0.3,
 		fontcolor = "#000000",
 		color = "#c07000",
-		fillcolor = "white:#ffffc0",
+
+		// these 2 attributes need 2.38
+		fillcolor = "#ffffff:#ffffc0",
 		gradientangle = 285
 	];
 

@@ -7,13 +7,22 @@
  */
 class QuickGV {
 
+	/* 輸入內容上限 (1M) */
+	const MAX_INPUTSIZE = 1048576;
+
+	/* 自定義 dot 路徑 */
+	const DOT_PATH = '';
+	//const DOT_PATH = 'C:\Program Files (x86)\Graphviz2.38\bin\dot';
+
+	/* 自定義 php 路徑 */
+	const PHP_PATH = '';
+	//const PHP_PATH = 'C:\wamp\bin\php\php5.4.3\php.exe';
+
 	/* 錯誤訊息暫存區 */
 	private static $errmsgs = array();
 
+	/* 版本字串 */
 	private static $version;
-
-	/* 輸入內容上限 (1M) */
-	const MAX_INPUTSIZE = 1048576;
 
 	/**
 	 * 掛載點設定 (由 MediaWiki 觸發)
@@ -58,11 +67,13 @@ class QuickGV {
 			return self::showError();
 		}
 
-		// 環境檢查
-		$dotcmd = self::findDot();
-		if ($dotcmd=='') {
-			return self::showError();
-		}
+		// dot 環境檢查
+		$dotcmd = self::findExecutable('dot', self::DOT_PATH);
+		if ($dotcmd=='') return self::showError();
+
+		// PHP 環境檢查
+		$phpcmd = self::findExecutable('php', self::PHP_PATH);
+		if ($phpcmd=='') return self::showError();
 
 		// $in 上限管制
 		if (strlen($in)>self::MAX_INPUTSIZE) {
@@ -80,43 +91,31 @@ class QuickGV {
 		$imgdir = sprintf('%s/images/quickgv', $IP);
 		if (!is_dir($imgdir)) mkdir($imgdir);
 
-		$fn = sprintf('%s-%s', $prefix, $gname);
-		$infile  = sprintf('%s/images/quickgv/%s.in' , $IP, $fn);
-		$dotfile = sprintf('%s/images/quickgv/%s.dot', $IP, $fn);
+		$fn = self::getSafeName(sprintf('%s-%s', $prefix, $gname));
 		$svgfile = sprintf('%s/images/quickgv/%s.svg', $IP, $fn);
 		$svgurl  = sprintf('%s/images/quickgv/%s.svg', $wgScriptPath, $fn);
 
-		// in 處理
-		file_put_contents($infile, trim($in));
-
-		// 產生 dot 語法
-		$dotexec = __DIR__ . '/QuickGV.template.php';
+		// 執行 php, 產生 dot 語法
+		$dottpl = __DIR__ . '/QuickGV.template.php';
 		$cmd = sprintf(
-			'php %s %s < %s > %s',
-			escapeshellarg($dotexec), // $argv[0]
-			escapeshellarg($gname),   // $argv[1]
-			escapeshellarg($infile),  // stdin
-			escapeshellarg($dotfile)  // stdout
+			'%s %s %s',
+			escapeshellarg($phpcmd), // php
+			escapeshellarg($dottpl), // $argv[0]
+			escapeshellarg($gname)   // $argv[1]
 		);
-		system($cmd);
-		unlink($infile);
+		$retval = self::pipeExec($cmd, $in, $dotcode, $err, 'utf-8');
 
-		// 執行 dot，產生 svg 圖檔
-		$errfile = tempnam($imgdir,'stderr-');
-		$cmd = sprintf('%s -Tsvg %s > %s 2> %s',
+		// 執行 dot, 產生 svg 圖檔
+		$cmd = sprintf('%s -Tsvg > %s',
 			escapeshellarg($dotcmd),  // dot fullpath
-			escapeshellarg($dotfile), // stdin
-			escapeshellarg($svgfile), // stdout
-			escapeshellarg($errfile)  // stderr
+			escapeshellarg($svgfile) // stdout
 		);
-		system($cmd, $status);
+		$retval = self::pipeExec($cmd, $dotcode, $out, $err, 'utf-8');
 
 		// dot 指令的錯誤處理
-		if ($status!=0) $errstr = file_get_contents($errfile);
-		unlink($errfile);
-		if ($status!=0) {
-			$html = self::showError($errstr);
-			$html .= sprintf('<pre>%s</pre>', file_get_contents($dotfile));
+		if ($retval!=0) {
+			$html = self::showError($err);
+			$html .= sprintf('<pre>%s</pre>', $dotcode);
 			return $html;
 		}
 
@@ -135,25 +134,22 @@ class QuickGV {
 			$size = self::getFriendlySize(filesize($svgfile));
 
 			$table_html = array();
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filesize')->plain(), $size);
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
-			$table_html[] = sprintf('<tr><th>%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('quickgv-ver')->plain(), self::$version);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filesize')->plain(), $size);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('quickgv-ver')->plain(), self::$version);
 			$table_html = implode("\n", $table_html);
-			$table_html = sprintf('<table class="mw_metadata" style="margin-left:0; margin-top:5px;"><tbody>%s</tbody></table>',$table_html);
+			$table_html = sprintf('<table class="mw_metadata" style="width:600px; margin:5px 0 0 0;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
 			unset($table_html);
 		}
 
 		if ($showdot==='true') {
-			$html .= sprintf('<pre>%s</pre>', file_get_contents($dotfile));
+			$html .= sprintf('<pre>%s</pre>', $dotcode);
 		}
-
-		// 移除暫時性的 dot
-		unlink($dotfile);
 
 		return $html;
 	}
@@ -164,7 +160,7 @@ class QuickGV {
 	 * @since 0.1.1
 	 * @param $msg 錯誤訊息
 	 */
-	public static function addError($msg) {
+	private static function addError($msg) {
 		self::$errmsgs[] = $msg;
 	}
 
@@ -174,7 +170,7 @@ class QuickGV {
 	 * @since 0.1.1
 	 * @param $msg 錯誤訊息，如果沒有提供，會使用 addError 增加的錯誤訊息
 	 */
-	public static function showError($msg='') {
+	private static function showError($msg='') {
 		// 內建 CSS:
 		// .errorbox   - MW 顯示錯誤訊息的 CSS class
 		// .warningbox - MW 顯示警示訊息的 CSS class
@@ -183,6 +179,7 @@ class QuickGV {
 
 		if ($msg==='') {
 			if (count(self::$errmsgs)>0) {
+				$html = '';
 				foreach (self::$errmsgs as $cached_msg) {
 					$html .= "<p>$cached_msg</p>";
 				}
@@ -203,7 +200,7 @@ class QuickGV {
 	 *
 	 * @param $params 設定值組
 	 */
-	public static function validateParam(&$params) {
+	private static function validateParam(&$params) {
 		$patterns = array(
 			'bool' => '/^(true|false)$/',
 			'name' => '/^[a-zA-Z0-9_]+$/',
@@ -234,43 +231,54 @@ class QuickGV {
 	}
 
 	/**
-	 * 檢查 dot 指令是否存在
+	 * 搜尋程式的完整路徑
+	 * 如果沒有自定義路徑，使用 which 或是 where 指令搜尋程式完整路徑，
+	 * 如果有自定義路徑，則使用自定義路徑，不進行自動搜尋。
 	 *
-	 * @return dot 指令的完整路徑 (目前不進行 realpath 處理)
+	 * @since  0.2.0
+	 * @param  $exec_name   程式名稱
+	 * @param  $exec_custom 自定義程式路徑
+	 * @return 程式完整路徑
 	 */
-	public static function findDot() {
-		if (PHP_OS!=='WINNT') {
-			$dotpath = exec('which dot'); // if not found, return string(0) ""
-			if ($dotpath==='') {
-				$guesslist = array(
-					'/usr/bin/dot',
-					'/usr/local/bin/dot'
-				);
-				foreach ($guesslist as $guessitem) {
-					if (file_exists($guessitem)) {
-						$dotpath = $guessitem;
-						break;
+	private static function findExecutable($exec_name, $exec_custom) {
+		if ($exec_custom==='') {
+			if (PHP_OS!=='WINNT') {
+				$exec_path = exec("which $exec_name");
+				if ($exec_path==='') {
+					$search_dirs = array(
+						'/usr/bin',
+						'/usr/local/bin'
+					);
+					foreach ($search_dirs as $dir) {
+						$p = sprintf('%s/%s',$dir,$exec_name);
+						if (file_exists($p)) {
+							$exec_path = $p;
+							break;
+						}
 					}
 				}
+			} else {
+				// TODO 0.2.1: search dot.exe from:
+				// * %ProgramFiles%      - C:\Program Files
+				// * %ProgramFiles(x86)% - C:\Program Files (x86)
+				// [Gg]raphviz\s?2\.\d+\bin\dot
+				$exec_path = exec("where $exec_name");
 			}
+
+			if ($exec_path==='') {
+				self::addError("$exec_name is not installed or not found.");
+				return '';
+			}
+
+			if (!is_executable($exec_path)) {
+				self::addError("$exec_path is not executable.");
+				return '';
+			}
+
+			return $exec_path;
 		} else {
-			// for Windows 7
-			$dotpath = exec('where dot.exe');
+			return $exec_custom;
 		}
-
-		if ($dotpath==='') {
-			self::addError('Graphviz is not installed or not found.');
-			return '';
-		}
-
-		if (!is_executable($dotpath)) $dotpath = '';
-
-		if ($dotpath==='') {
-			self::addError('Graphviz is not executable.');
-			return '';
-		}
-
-		return $dotpath;
 	}
 
 	/**
@@ -281,7 +289,7 @@ class QuickGV {
 	 * @param  $default 預設值
 	 * @return 預期結果
 	 */
-	public static function getParam(&$params, $key, $default='') {
+	private static function getParam(&$params, $key, $default='') {
 		if (isset($params[$key])) {
 			if (trim($params[$key])!=='') return $params[$key];
 		}
@@ -293,7 +301,7 @@ class QuickGV {
 	 *
 	 * @param $size 位元組數
 	 */
-	public static function getFriendlySize($size) {
+	private static function getFriendlySize($size) {
 		static $unit_ch = array('B','KB','MB');
 
 		$unit_lv = 0;
@@ -301,12 +309,103 @@ class QuickGV {
 			$size /= 1024;
 			$unit_lv++;
 		}
-		
+
 		if ($unit_lv==0) {
 			return sprintf('%d %s', $size, $unit_ch[$unit_lv]);
 		} else {
 			return sprintf('%.2f %s', $size, $unit_ch[$unit_lv]);
 		}
+	}
+
+	/**
+	 * 檔名迴避 Windows 不接受的字元
+	 */
+	private static function getSafeName($unsafename) {
+		$safename = '';
+		$slen = strlen($unsafename);
+
+		// escape non-ascii chars
+		for($i=0;$i<$slen;$i++) {
+			$ch = $unsafename[$i];
+			$cc = ord($ch);
+			if ($cc<32 || $cc>127) {
+				$safename .= sprintf('x%02x',$cc);
+			} else {
+				$safename .= $ch;
+			}
+		}
+
+		return $safename;
+	}
+
+	/**
+	 * shell 執行程式
+	 */
+	private static function pipeExec($cmd, $stdin='', &$stdout='', &$stderr='', $encoding='sys') {
+		static $sys_encoding = '';
+
+		if ($encoding==='sys') {
+			// detect system encoding once
+			if ($sys_encoding==='') {
+				if (PHP_OS==='WINNT') {
+					// for Windows
+					$lastln = exec('chcp', $stdout, $retval);
+					if ($retval===0) {
+						$ok = preg_match('/: (\d+)$/', $lastln, $matches);
+						if ($ok===1) $sys_encoding = sprintf('cp%d', (int)$matches[1]);
+					}
+				} else {
+					// for Linux / OSX / BSD
+					// TODO: ...
+				}
+
+				if ($sys_encoding==='') $sys_encoding = 'utf-8';
+			}
+
+			// apply system encoding
+			$encoding = $sys_encoding;
+		}
+
+		// pipe all streams
+		$desc = array(
+			array('pipe', 'r'), // stdin
+			array('pipe', 'w'), // stdout
+			array('pipe', 'w')  // stderr
+		);
+
+		// run the command
+		if (PHP_OS==='WINNT') $cmd = sprintf('"%s"', $cmd); // hack for windows
+		$proc = proc_open($cmd, $desc, $pipes);
+		if (is_resource($proc)) {
+			$encoding = strtolower($encoding);
+
+			// feed stdin
+			if ($encoding!=='utf-8') {
+				$stdin = iconv('utf-8', $encoding, $stdin);
+			}
+			fwrite($pipes[0], $stdin);
+			fclose($pipes[0]);
+
+			// read stdout
+			$stdout = stream_get_contents($pipes[1]);
+			if ($encoding!=='utf-8') {
+				$stdout = iconv($encoding, 'utf-8', $stdout);
+			}
+			fclose($pipes[1]);
+
+			// read stderr
+			$stderr = stream_get_contents($pipes[2]);
+			if ($encoding!=='utf-8') {
+				$stderr = iconv($encoding, 'utf-8', $stderr);
+			}
+			fclose($pipes[2]);
+
+			$retval = proc_close($proc);
+		} else {
+			$retval = -1;
+		}
+
+		return $retval;
 	}
 
 }
