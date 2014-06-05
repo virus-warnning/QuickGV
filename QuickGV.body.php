@@ -11,7 +11,7 @@ class QuickGV {
 	const MAX_INPUTSIZE = 1048576;
 
 	/* 自定義 dot 路徑 */
-	const DOT_PATH = 'dot2';
+	const DOT_PATH = '';
 	//const DOT_PATH = 'C:\Program Files (x86)\Graphviz2.38\bin\dot';
 
 	/* 自定義 php 路徑 */
