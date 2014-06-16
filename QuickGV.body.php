@@ -2,7 +2,6 @@
 /**
  * Graphviz 快速製圖器
  *
- * @since  0.2.0
  * @author Raymond Wu https://github.com/virus-warnning
  */
 class QuickGV {
@@ -82,8 +81,11 @@ class QuickGV {
 		}
 
 		$gname    = self::getParam($param, 'name'    , 'G');
+		$theme    = self::getParam($param, 'theme'   , '');
+		$usage    = self::getParam($param, 'usage'   , '');
 		$showmeta = self::getParam($param, 'showmeta', 'false');
 		$showdot  = self::getParam($param, 'showdot' , 'false');
+		//return '<pre>' . print_r($param, true) . '</pre>';
 
 		$prefix = $parser->mTitle;
 		$prefix = str_replace(array('\\','/',' '), '_', $prefix);
@@ -98,10 +100,12 @@ class QuickGV {
 		// 執行 php, 產生 dot 語法
 		$dottpl = __DIR__ . '/QuickGV.template.php';
 		$cmd = sprintf(
-			'%s %s %s',
+			'%s %s %s %s %s',
 			escapeshellarg($phpcmd), // php
 			escapeshellarg($dottpl), // $argv[0]
-			escapeshellarg($gname)   // $argv[1]
+			escapeshellarg($gname),  // $argv[1]
+			escapeshellarg($theme),  // $argv[2]
+			escapeshellarg($usage)   // $argv[3]
 		);
 		$retval = self::pipeExec($cmd, $in, $dotcode, $err, 'utf-8');
 
@@ -367,6 +371,8 @@ class QuickGV {
 
 	/**
 	 * shell 執行程式
+	 *
+	 * @since 0.2.0
 	 */
 	private static function pipeExec($cmd, $stdin='', &$stdout='', &$stderr='', $encoding='sys') {
 		static $sys_encoding = '';
