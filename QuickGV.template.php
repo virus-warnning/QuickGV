@@ -61,13 +61,14 @@ $theme = shell_arg(2, 'default');
 $usage = shell_arg(3);
 
 // replace the alias of usage
-if ($usage=='er' || $usage=='ram') $usage = 'record';
-if ($usage=='mindmap') $usage = 'neato';
+if ($usage==='er' || $usage==='ram') $usage = 'record';
+if ($usage==='mindmap') $usage = 'neato';
 
 // get graph description
 $gdata = trim(file_get_contents('php://stdin'));
 
 if (!isset($THEME_ATTRS[$theme])) $theme = 'default';
+if ($gdata==='') $theme = 'warm';
 $attrs =& $THEME_ATTRS[$theme];
 ?>
 digraph <?php echo $gname; ?> {
@@ -114,14 +115,30 @@ digraph <?php echo $gname; ?> {
 		fontsize  = 10
 	];
 
-	<?php if ($gdata==''): ?>
+	<?php if ($gdata===''): ?>
 
-	// default graph
-	A [label="if (Z>B)"];
-	B [label="Banana"];
-	C [label="Sunflower"];
-	A -> B [label="yes"];
-	A -> C [label="no"];
+	//--------------------------
+	// default graph ---- begin
+	//--------------------------
+
+	graph [rankdir=TB];
+
+	A  [label="Can it work?"];
+	B  [label="Did you touch it?"];
+	C  [label="Does anybody know that?"];
+	Z1 [label="It's OK! Don't touch it."];
+	Z2 [label="Oh! You are such a fool."];
+
+	A -> Z1 [label="Yes"];
+	A -> B  [label="No"];
+	B -> Z1 [label="No"];
+	B -> C  [label="Yes"];
+	C -> Z1 [label="No"];
+	C -> Z2 [label="Yes"];
+
+	//--------------------------
+	// default graph ---- end
+	//--------------------------
 
 	<?php else: ?>
 
