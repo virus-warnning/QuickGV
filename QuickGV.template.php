@@ -60,8 +60,8 @@ $gname = shell_arg(1, 'G');
 $theme = shell_arg(2, 'default');
 $usage = shell_arg(3);
 
-// replace aliases of usage
-if ($usage=='er') $usage = 'record';
+// replace the alias of usage
+if ($usage=='er' || $usage=='ram') $usage = 'record';
 if ($usage=='mindmap') $usage = 'neato';
 
 // get graph description
