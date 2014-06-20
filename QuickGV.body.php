@@ -145,7 +145,7 @@ class QuickGV {
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
-			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('quickgv-ver')->plain(), self::$version);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s - <a href="https://www.mediawiki.org/wiki/Extension:QuickGV" target="_blank">%s</a></td></tr>', wfMessage('quickgv-ver')->plain(), self::$version, wfMessage('quickgv-about')->plain());
 			$table_html = implode("\n", $table_html);
 			$table_html = sprintf('<table class="mw_metadata" style="width:600px; margin:5px 0 0 0;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
