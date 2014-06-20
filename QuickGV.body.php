@@ -130,7 +130,8 @@ class QuickGV {
 			$elapsed = microtime(true) - $beg_time;
 
 			// 取 Graphviz 版本資訊 (需要獨立 function)
-			$verstr = system('dot -V 2>&1');
+			self::pipeExec('dot -V', '', $out, $err);
+			$verstr = trim($err);
 			$verpos = strpos($verstr,'version')+8;
 			$verstr = substr($verstr,$verpos);
 
