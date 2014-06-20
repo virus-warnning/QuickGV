@@ -14,8 +14,8 @@ class QuickGV {
 	//const DOT_PATH = 'C:\Program Files (x86)\Graphviz2.38\bin\dot';
 
 	/* 自定義 php 路徑 */
-	const PHP_PATH = '';
-	//const PHP_PATH = 'C:\wamp\bin\php\php5.4.3\php.exe';
+	//const PHP_PATH = '';
+	const PHP_PATH = 'C:\wamp\bin\php\php5.4.3\php.exe';
 
 	/* 錯誤訊息暫存區 */
 	private static $errmsgs = array();
@@ -130,7 +130,8 @@ class QuickGV {
 			$elapsed = microtime(true) - $beg_time;
 
 			// 取 Graphviz 版本資訊 (需要獨立 function)
-			self::pipeExec('dot -V', '', $out, $err);
+			$cmd = sprintf('%s -V', escapeshellarg($dotcmd));
+			self::pipeExec($cmd, '', $out, $err);
 			$verstr = trim($err);
 			$verpos = strpos($verstr,'version')+8;
 			$verstr = substr($verstr,$verpos);
@@ -264,10 +265,31 @@ class QuickGV {
 				}
 			} else {
 				// TODO 0.2.1: search dot.exe from:
-				// * %ProgramFiles%      - C:\Program Files
 				// * %ProgramFiles(x86)% - C:\Program Files (x86)
+				// * %ProgramFiles%      - C:\Program Files
 				// [Gg]raphviz\s?2\.\d+\bin\dot
-				$exec_path = exec("where $exec_name");
+				//$exec_path = exec("where $exec_name");
+
+				$prog_files = getenv('ProgramFiles(x86)'); // for 64-bits Windows
+				if ($prog_files===false) {
+					$prog_files = getenv('ProgramFiles');  // for 32-bits Windows
+				}
+
+				$matched_dirs = array();
+				$dh = opendir($prog_files);
+				while (($prog_dir = readdir($dh))!==false) {
+					if (preg_match('/[Gg]raphviz\s?(2\.\d+)/', $prog_dir, $matches)) {
+						$gv_ver = (float)$matches[1];
+						if ($gv_ver>=2.0) $matched_dirs[] = $prog_dir;
+					}
+				}
+				closedir($dh);
+				
+				if (count($matched_dirs)) {
+					rsort($matched_dirs);
+					$prog_dir  = $matched_dirs[0];
+					$exec_path = sprintf('%s\\%s\\bin\\dot.exe', $prog_files, $prog_dir);
+				}
 			}
 		} else {
 			$exec_path = $exec_custom;
