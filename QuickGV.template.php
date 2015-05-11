@@ -6,36 +6,44 @@
 // theme definitions
 $THEME_ATTRS = array(
 	'cold' => array(
-		'graph_background' => '#000066',
-		'edge_path'   => '#ffffff',
-		'edge_font'   => '#ffffff',
-		'node_border' => '#ffffff',
-		'node_font'   => '#000000',
-		'node_fill'   => '#ccffff:#00c0ff'
+		'graph_bg'     => '#000066',
+		'graph_label'  => '#ffffff',
+		'graph_border' => '#ffffff',
+		'edge_path'    => '#ffffff',
+		'edge_font'    => '#ffffff',
+		'node_border'  => '#ffffff',
+		'node_font'    => '#000000',
+		'node_fill'    => '#ccffff:#00c0ff'
 	),
 	'warm' => array(
-		'graph_background' => '#fffff7',
-		'edge_path'   => '#704000',
-		'edge_font'   => '#704000',
-		'node_border' => '#c07000',
-		'node_font'   => '#000000',
-		'node_fill'   => '#ffffff:#ffffc0'
+		'graph_bg'     => '#fffff7',
+		'graph_label'  => '#000000',
+		'graph_border' => '#804000',
+		'edge_path'    => '#704000',
+		'edge_font'    => '#704000',
+		'node_border'  => '#c07000',
+		'node_font'    => '#000000',
+		'node_fill'    => '#ffffff:#ffffc0'
 	),
 	'sakura' => array(
-		'graph_background' => '#996677',
-		'edge_path'   => '#ffffff',
-		'edge_font'   => '#ffffff',
-		'node_border' => '#cc4444',
-		'node_font'   => '#000000',
-		'node_fill'   => '#ffffff:#ffc0d0'
+		'graph_bg'     => '#996677',
+		'graph_label'  => '#ffffff',
+		'graph_border' => '#ffffff',
+		'edge_path'    => '#ffffff',
+		'edge_font'    => '#ffffff',
+		'node_border'  => '#cc4444',
+		'node_font'    => '#000000',
+		'node_fill'    => '#ffffff:#ffc0d0'
 	),
 	'default' => array(
-		'graph_background' => '#f0f0f0:#ffffff',
-		'edge_path'   => '#555555',
-		'edge_font'   => '#000000',
-		'node_border' => '#aaaaaa',
-		'node_font'   => '#000000',
-		'node_fill'   => '#ffffff:#e7e7e7'
+		'graph_bg'     => '#f0f0f0:#ffffff',
+		'graph_label'  => '#000000',
+		'graph_border' => '#555555',
+		'edge_path'    => '#555555',
+		'edge_font'    => '#000000',
+		'node_border'  => '#aaaaaa',
+		'node_font'    => '#000000',
+		'node_fill'    => '#ffffff:#e7e7e7'
 	),
 );
 
@@ -79,9 +87,14 @@ digraph <?php echo $gname; ?> {
 
 	// default settings of graphs
 	graph [
-		rankdir = LR,
-		bgcolor = "<?php echo $attrs['graph_background']; ?>",
+		rankdir   = LR,
+		color     = "<?php echo $attrs['graph_border']; ?>",
+		bgcolor   = "<?php echo $attrs['graph_bg']; ?>",
+		fontcolor = "<?php echo $attrs['graph_label']; ?>",
+		fontsize  = 12,
+		style     = dashed;
 		gradientangle = 65,
+
 		<?php if ($usage=='neato'): ?>
 		layout = neato,
 		start  = "A",
@@ -93,6 +106,7 @@ digraph <?php echo $gname; ?> {
 		<?php if ($usage==='record'): ?>
 		shape = record,
 		style = filled,
+		labelloc = l,
 		<?php else: ?>
 		shape = box,
 		style = "filled,rounded",
