@@ -206,16 +206,19 @@ class QuickGV {
 	 * @param $params 設定值組
 	 */
 	private static function validateParam(&$params) {
+		// 正向表列格式清單
 		$patterns = array(
 			'bool' => '/^(true|false)$/',
-			'name' => '/^[a-zA-Z0-9_]+$/',
+			'name' => '/^[\w_]+$/u',      // 防止符號字元，而且支援中文
 		);
 
+		// 驗證失敗時的錯誤訊息
 		$descs = array(
 			'bool' => 'true or false',
-			'name' => 'these characters a~z, A~Z or 0~9',
+			'name' => 'word characters or underscore',
 		);
 
+		// 驗證欄位與格式對應
 		$formats = array(
 			'name' => 'name',
 			'showdot' => 'bool',
