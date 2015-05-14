@@ -123,7 +123,14 @@ class QuickGV {
 		}
 
 		// 輸出
-		$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
+		$html = sprintf('<p><img src="%s" style="border:1px solid #777;" /></p>', $svgurl);
+		//$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
+		/*
+		$svg_desc = file_get_contents($svgfile);
+		$pos = strpos($svg_desc, '<svg');
+		$svg_desc = substr($svg_desc, $pos);
+		$html = sprintf('<pre>%s</pre>', htmlspecialchars($svg_desc));
+		*/
 
 		if ($showmeta==='true') {
 			$elapsed = microtime(true) - $beg_time;
@@ -188,6 +195,9 @@ class QuickGV {
 				foreach (self::$errmsgs as $cached_msg) {
 					$html .= "<p>$cached_msg</p>";
 				}
+
+				// Clear messages, or graphs after this one will broken.
+				self::$errmsgs = array();
 			} else {
 				$html = "<p>Test</p>";
 			}
