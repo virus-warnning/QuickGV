@@ -79,6 +79,10 @@ class QuickGV {
 			return self::showError($msg);
 		}
 
+		// 計算新的摘要，快取處理用
+		$sum_curr = md5(json_encode($param).$in);
+
+		// 讀取參數，或是預設值
 		$gname    = self::getParam($param, 'name'    , 'G');
 		$theme    = self::getParam($param, 'theme'   , '');
 		$usage    = self::getParam($param, 'usage'   , '');
@@ -87,44 +91,73 @@ class QuickGV {
 		//return '<pre>' . print_r($param, true) . '</pre>';
 
 		$prefix = $parser->mTitle;
-		$prefix = str_replace(array('\\','/',' '), '_', $prefix);
+		$prefix = str_replace(array('\\','/',' '), '_', $prefix); // TODO: 搬去 self::getSafeName()
 
 		$imgdir = sprintf('%s/images/quickgv', $IP);
 		if (!is_dir($imgdir)) mkdir($imgdir);
 
 		$fn = self::getSafeName(sprintf('%s-%s', $prefix, $gname));
-		$svgfile = sprintf('%s/images/quickgv/%s.svg', $IP, $fn);
-		$svgurl  = sprintf('%s/images/quickgv/%s.svg', $wgScriptPath, $fn);
+		$metafile = sprintf('%s/images/quickgv/%s-meta.json', $IP, $fn);
+		$svgfile  = sprintf('%s/images/quickgv/%s.svg', $IP, $fn);
+		$svgurl   = sprintf('%s/images/quickgv/%s.svg', $wgScriptPath, $fn);
 
-		// 執行 php, 產生 dot 語法
-		$dottpl = __DIR__ . '/QuickGV.template.php';
-		$cmd = sprintf(
-			'%s %s %s %s %s',
-			escapeshellarg($phpcmd), // php
-			escapeshellarg($dottpl), // $argv[0]
-			escapeshellarg($gname),  // $argv[1]
-			escapeshellarg($theme),  // $argv[2]
-			escapeshellarg($usage)   // $argv[3]
-		);
-		$retval = self::pipeExec($cmd, $in, $dotcode, $err, 'utf-8');
-
-		// 執行 dot, 產生 svg 圖檔
-		$cmd = sprintf('%s -Tsvg > %s',
-			escapeshellarg($dotcmd),  // dot fullpath
-			escapeshellarg($svgfile) // stdout
-		);
-		$retval = self::pipeExec($cmd, $dotcode, $out, $err, 'utf-8');
-
-		// dot 指令的錯誤處理
-		if ($retval!=0) {
-			$html = self::showError($err);
-			$html .= sprintf('<pre>%s</pre>', $dotcode);
-			return $html;
+		// 更新狀況檢查
+		$modified = true;
+		if (is_file($metafile) && is_file($svgfile)) {
+			$meta = json_decode(file_get_contents($metafile),true);
+			$sum_prev = $meta['md5sum'];
+			if ($sum_curr==$sum_prev) {
+				$modified = false;
+				$elapsed  = $meta['elapsed'];
+				$dotcode  = $meta['dotcode'];
+			}
 		}
 
-		// 輸出
-		$html = sprintf('<p><img src="%s" style="border:1px solid #777;" /></p>', $svgurl);
-		//$html = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, time());
+		// 有更新才轉檔
+		if ($modified) {
+			// 執行 php, 產生 dot 語法
+			$dottpl = __DIR__ . '/QuickGV.template.php';
+			$cmd = sprintf(
+				'%s %s %s %s %s',
+				escapeshellarg($phpcmd), // php
+				escapeshellarg($dottpl), // $argv[0]
+				escapeshellarg($gname),  // $argv[1]
+				escapeshellarg($theme),  // $argv[2]
+				escapeshellarg($usage)   // $argv[3]
+			);
+			$retval = self::pipeExec($cmd, $in, $dotcode, $err, 'utf-8');
+
+			// 執行 dot, 產生 svg 圖檔
+			$cmd = sprintf('%s -Tsvg > %s',
+				escapeshellarg($dotcmd),  // dot fullpath
+				escapeshellarg($svgfile) // stdout
+			);
+			$retval = self::pipeExec($cmd, $dotcode, $out, $err, 'utf-8');
+
+			// dot 指令的錯誤處理
+			if ($retval!=0) {
+				$html = self::showError($err);
+				$html .= sprintf('<pre>%s</pre>', $dotcode);
+				return $html;
+			}
+
+			// 如果輸出成功，記錄 "轉圖時間"、"MD5"
+			// 如果有開啟顯示原始碼，也記錄 "dot 原始碼"
+			$elapsed = microtime(true) - $beg_time;
+			$meta = array(
+				'md5sum'  => $sum_curr,
+				'elapsed' => $elapsed,
+				'dotcode' => ''
+			);
+			if ($showdot==='true') $meta['dotcode'] = $dotcode;
+			file_put_contents($metafile, json_encode($meta));
+		}
+
+		// 輸出 (利用 mtime 讓圖片正確使用快取)
+		$mtime = filemtime($svgfile);
+		$html  = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, $mtime);
+
+		// TODO: 之後實驗 SVG Link 用
 		/*
 		$svg_desc = file_get_contents($svgfile);
 		$pos = strpos($svg_desc, '<svg');
@@ -133,8 +166,6 @@ class QuickGV {
 		*/
 
 		if ($showmeta==='true') {
-			$elapsed = microtime(true) - $beg_time;
-
 			// 取 Graphviz 版本資訊 (需要獨立 function)
 			$cmd = sprintf('%s -V', escapeshellarg($dotcmd));
 			self::pipeExec($cmd, '', $out, $err);
@@ -148,7 +179,9 @@ class QuickGV {
 			$table_html = array();
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filesize')->plain(), $size);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filemtime')->plain(), date('Y-m-d H:i:s',$mtime));
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('md5sum')->plain(), $sum_curr);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
