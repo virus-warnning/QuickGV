@@ -155,15 +155,7 @@ class QuickGV {
 
 		// 輸出 (利用 mtime 讓圖片正確使用快取)
 		$mtime = filemtime($svgfile);
-		$html  = sprintf('<p><img src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, $mtime);
-
-		// TODO: 之後實驗 SVG Link 用
-		/*
-		$svg_desc = file_get_contents($svgfile);
-		$pos = strpos($svg_desc, '<svg');
-		$svg_desc = substr($svg_desc, $pos);
-		$html = sprintf('<pre>%s</pre>', htmlspecialchars($svg_desc));
-		*/
+		$html  = sprintf('<p><embed type="image/svg+xml" src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, $mtime);
 
 		if ($showmeta==='true') {
 			// 取 Graphviz 版本資訊 (需要獨立 function)
