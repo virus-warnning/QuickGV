@@ -6,14 +6,15 @@
 // theme definitions
 $THEME_ATTRS = array(
 	'cold' => array(
-		'graph_bg'     => '#000066',
+		'graph_bg'     => '#555566',
 		'graph_label'  => '#ffffff',
 		'graph_border' => '#ffffff',
 		'edge_path'    => '#ffffff',
 		'edge_font'    => '#ffffff',
 		'node_border'  => '#ffffff',
 		'node_font'    => '#000000',
-		'node_fill'    => '#ccffff:#00c0ff'
+		'node_fill'    => '#ccffff:#00c0ff',
+		'powered_by'   => '#888899'
 	),
 	'warm' => array(
 		'graph_bg'     => '#fffff7',
@@ -23,7 +24,8 @@ $THEME_ATTRS = array(
 		'edge_font'    => '#704000',
 		'node_border'  => '#c07000',
 		'node_font'    => '#000000',
-		'node_fill'    => '#ffffff:#ffffc0'
+		'node_fill'    => '#ffffff:#ffffc0',
+		'powered_by'   => '#bbbbbb'
 	),
 	'sakura' => array(
 		'graph_bg'     => '#996677',
@@ -33,7 +35,8 @@ $THEME_ATTRS = array(
 		'edge_font'    => '#ffffff',
 		'node_border'  => '#cc4444',
 		'node_font'    => '#000000',
-		'node_fill'    => '#ffffff:#ffc0d0'
+		'node_fill'    => '#ffffff:#ffc0d0',
+		'powered_by'   => '#cc99aa'
 	),
 	'default' => array(
 		'graph_bg'     => '#f0f0f0:#ffffff',
@@ -43,7 +46,8 @@ $THEME_ATTRS = array(
 		'edge_font'    => '#000000',
 		'node_border'  => '#aaaaaa',
 		'node_font'    => '#000000',
-		'node_fill'    => '#ffffff:#e7e7e7'
+		'node_fill'    => '#ffffff:#e7e7e7',
+		'powered_by'   => '#bbbbbb'
 	),
 );
 
@@ -160,5 +164,17 @@ digraph <?php echo $gname; ?> {
 	<?php echo $gdata; ?>
 
 	<?php endif; ?>
+
+	/*
+	POWERED_BY_QUICKGV [
+		label="Powered by QuickGV",
+		shape="plaintext",
+		fontcolor="<?php echo $attrs['powered_by']; ?>",
+		fillcolor="none",
+		href="https://www.mediawiki.org/wiki/Extension:QuickGV",
+		target="_blank",
+		pos="0.5,0.5!"
+	];
+	*/
 
 }
