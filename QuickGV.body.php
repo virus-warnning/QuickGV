@@ -130,7 +130,7 @@ class QuickGV {
 			// 執行 dot, 產生 svg 圖檔
 			$cmd = sprintf('%s -Tsvg > %s',
 				escapeshellarg($dotcmd),  // dot fullpath
-				escapeshellarg($svgfile) // stdout
+				escapeshellarg($svgfile)  // stdout
 			);
 			$retval = self::pipeExec($cmd, $dotcode, $out, $err, 'utf-8');
 
@@ -139,6 +139,27 @@ class QuickGV {
 				$html = self::showError($err);
 				$html .= sprintf('<pre>%s</pre>', $dotcode);
 				return $html;
+			}
+
+			// 頁尾加上 powered by QuickGV
+			$svgxml = simplexml_load_file($svgfile);
+			$w = (int)$svgxml->attributes()->width;
+			$h = (int)$svgxml->attributes()->height;
+			if ($w>200 && $h>50) {
+				$footer = $svgxml->addChild('text');
+				$footer->addAttribute('text-anchor','end');
+				$footer->addAttribute('x','100%');
+				$footer->addAttribute('y','100%');
+				$footer->addAttribute('transform','translate(-5,-5)');
+				$footer->addAttribute('font-family','Times,serif');
+				$footer->addAttribute('font-size','10');
+
+				$ftlink = $footer->addChild('a', 'powered by QuickGV');
+				$ftlink->addAttribute('xlink:href','https://www.mediawiki.org/wiki/Extension:QuickGV','http://www.w3.org/1999/xlink');
+				$ftlink->addAttribute('target','_blank');
+				$ftlink->addAttribute('fill','#aaaaaa');
+
+				file_put_contents($svgfile, $svgxml->asXML());
 			}
 
 			// 如果輸出成功，記錄 "轉圖時間"、"MD5"
