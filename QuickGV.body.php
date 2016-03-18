@@ -141,12 +141,27 @@ class QuickGV {
 				return $html;
 			}
 
-			// 頁尾加上 powered by QuickGV
+			// SVG 動手腳 (Graphviz 無法處理的部分)
 			$svgxml = simplexml_load_file($svgfile);
+			$svgxml->registerXPathNamespace('svg', 'http://www.w3.org/2000/svg');
+
+			// 連結加上 target="_blank"
+			$links = $svgxml->xpath('//svg:a');
+			foreach ($links as $link) {
+				$link->addAttribute('target', '_blank');
+			}
+
+			// 連結文字變色
+			$txtns = $svgxml->xpath('//svg:a/svg:text');
+			foreach ($txtns as $txt) {
+				$txt->attributes()->fill = '#0000ff';
+			}
+
+			// 頁尾加上 powered by QuickGV
 			$w = (int)$svgxml->attributes()->width;
 			$h = (int)$svgxml->attributes()->height;
 			if ($w>200 && $h>50) {
-				$footer = $svgxml->addChild('text');
+				$footer = $svgxml->addChild('svg:text');
 				$footer->addAttribute('text-anchor','end');
 				$footer->addAttribute('x','100%');
 				$footer->addAttribute('y','100%');
@@ -154,13 +169,13 @@ class QuickGV {
 				$footer->addAttribute('font-family','Times,serif');
 				$footer->addAttribute('font-size','10');
 
-				$ftlink = $footer->addChild('a', 'powered by QuickGV');
+				$ftlink = $footer->addChild('svg:a', 'powered by QuickGV');
 				$ftlink->addAttribute('xlink:href','https://www.mediawiki.org/wiki/Extension:QuickGV','http://www.w3.org/1999/xlink');
 				$ftlink->addAttribute('target','_blank');
 				$ftlink->addAttribute('fill','#aaaaaa');
-
-				file_put_contents($svgfile, $svgxml->asXML());
 			}
+
+			file_put_contents($svgfile, $svgxml->asXML());
 
 			// 如果輸出成功，記錄 "轉圖時間"、"MD5"
 			// 如果有開啟顯示原始碼，也記錄 "dot 原始碼"
