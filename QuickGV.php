@@ -5,7 +5,7 @@ $wgExtensionCredits['parserhook'][] = array(
 	'author'         => '[https://github.com/virus-warnning Raymond Wu]',
 	'url'            => 'https://www.mediawiki.org/wiki/Extension:QuickGV',
 	'descriptionmsg' => 'quickgv-desc',
-	'version'        => '0.2.2',
+	'version'        => '0.2.3',
 );
 
 $wgAutoloadClasses['QuickGV'] = __DIR__ . '/QuickGV.body.php';
