@@ -92,12 +92,24 @@ digraph <?php echo $gname; ?> {
 		bgcolor   = "<?php echo $attrs['graph_bg']; ?>",
 		fontcolor = "<?php echo $attrs['graph_label']; ?>",
 		fontsize  = 12,
-		style     = dashed;
+		style     = dashed,
 		gradientangle = 65,
 
+		<?php if ($usage==''): ?>
+		splines = ortho,
+		<?php endif; ?>
+
 		<?php if ($usage=='neato'): ?>
-		layout = neato,
-		start  = "A",
+		splines = curved,
+		layout  = neato,
+		start   = "A",
+		<?php endif; ?>
+
+		<?php if ($usage==='record'): ?>
+		// * ortho, curved are bad
+		// * polyline acts as line
+		// * spline (default) is ok
+		splines = spline,
 		<?php endif; ?>
 	];
 
@@ -112,8 +124,8 @@ digraph <?php echo $gname; ?> {
 		style = "filled,rounded",
 		<?php endif; ?>
 
-		height   = 0.3,
-		fontsize = 10,
+		height    = 0.3,
+		fontsize  = 10,
 		
 		// theme
 		color     = "<?php echo $attrs['node_border']; ?>",
@@ -126,7 +138,8 @@ digraph <?php echo $gname; ?> {
 	edge [
 		color     = "<?php echo $attrs['edge_path']; ?>",
 		fontcolor = "<?php echo $attrs['edge_font']; ?>",
-		fontsize  = 10
+		fontsize  = 10,
+		arrowsize = 0.6
 	];
 
 	<?php if ($gdata===''): ?>
