@@ -1,0 +1,14 @@
+{
+    "quickgv-desc" : "快速製作流程圖、心智圖、記憶體描述的小工具。",
+    "filepath"     : "檔案路徑",
+    "filesize"     : "檔案大小",
+    "filemtime"    : "檔案更新時間",
+    "md5sum"       : "MD5 摘要",
+    "exectime"     : "轉圖時間",
+    "quickgv-sec"  : "秒",
+    "graphviz-path": "Graphviz 路徑",
+    "graphviz-ver" : "Graphviz 版本",
+    "graphviz-ref" : "參考文件",
+    "quickgv-ver"  : "QuickGV 版本",
+    "quickgv-about": "關於 QuickGV"
+}

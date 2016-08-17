@@ -1,0 +1,14 @@
+{
+    "quickgv-desc" : "Build flowchart, mindmap and ram description quickly.",
+    "filepath"     : "File Path",
+    "filesize"     : "File Size",
+    "filemtime"    : "Last modified",
+    "md5sum"       : "MD5 Summary",
+    "exectime"     : "Execution Time",
+    "quickgv-sec"  : "second(s)",
+    "graphviz-path": "Graphviz Path",
+    "graphviz-ver" : "Graphviz Version",
+    "graphviz-ref" : "Reference",
+    "quickgv-ver"  : "QuickGV Version",
+    "quickgv-about": "About QuickGV"
+}
