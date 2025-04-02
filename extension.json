@@ -1,15 +1,13 @@
 {
 	"name": "QuickGV",
-	"version": "0.2.4",
-	"author": [
-		"[https://github.com/virus-warnning 吳政璋]"
-	],
+	"version": "0.3.0",
+	"author": "[https://github.com/virus-warnning Raymond Wu]",
 	"url": "https://www.mediawiki.org/wiki/Extension:QuickGV",
 	"descriptionmsg": "quickgv-desc",
 	"license-name": "Apache-2.0",
 	"type": "parserhook",
-	"require": {
-		"MediaWiki": ">= 1.25"
+	"requires": {
+		"MediaWiki": ">= 1.31.0"
 	},
 	"MessagesDirs": {
 		"QuickGV": ["i18n"]
@@ -22,5 +20,5 @@
 			"QuickGV::init"
 		]	
 	},
-	"manifest_version": 1
+	"manifest_version": 2
 }

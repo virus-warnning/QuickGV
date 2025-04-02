@@ -6,7 +6,7 @@
  */
 class QuickGV {
 
-	/* 輸入內容上限 (1M) */
+	/* dot 原始碼內容上限 (10M) */
 	const MAX_INPUTSIZE = 1048576;
 
 	/* 自定義 dot 路徑 */
@@ -14,13 +14,18 @@ class QuickGV {
 
 	/* 自定義 php 路徑 */
 	const PHP_PATH = '';
-	//const PHP_PATH = 'C:\wamp\bin\php\php5.4.3\php.exe';
 
 	/* 錯誤訊息暫存區 */
 	private static $errmsgs = array();
 
 	/* 版本字串 */
-	private static $version;
+	private static $version = '0.0.0';
+
+	/* dot 指令路徑 */
+	private static $dotcmd = '';
+
+	/* graphviz 版本 */
+	private static $gvzver = '';
 
 	/**
 	 * 掛載點設定 (由 MediaWiki 觸發)
@@ -30,16 +35,22 @@ class QuickGV {
 	 */
 	public static function init(&$parser) {
 		// 取得版本字串
-		global $wgExtensionCredits;
-		foreach ($wgExtensionCredits['parserhook'] as $ext) {
-			if ($ext['name']==='QuickGV') {
-				self::$version = $ext['version'];
-				break;
-			}
+		self::$version = ExtensionRegistry::getInstance()->getAllThings()['QuickGV']['version'];
+
+		// 取得 dot 指令路徑
+		self::$dotcmd = self::findExecutable('dot', self::DOT_PATH);
+
+		// 取 Graphviz 版本資訊
+		// (stderr) dot - graphviz version 2.43.0 (0)
+		$cmd = sprintf('%s -V', escapeshellarg(self::$dotcmd));
+		self::pipeExec($cmd, '', $out, $err);
+		$bingo = preg_match('/version (\d.\d+.\d+)/', trim($err), $matches);
+		if ($bingo) {
+			self::$gvzver = $matches[1];
 		}
 
 		// 設定函數鉤
-		$parser->setHook('quickgv', array('QuickGV', 'render'));
+		$parser->setHook('quickgv', [self::class, 'render']);
 
 		return true;
 	}
@@ -66,8 +77,7 @@ class QuickGV {
 		}
 
 		// dot 環境檢查
-		$dotcmd = self::findExecutable('dot', self::DOT_PATH);
-		if ($dotcmd=='') return self::showError();
+		if (self::$dotcmd=='') return self::showError();
 
 		// PHP 環境檢查
 		$phpcmd = self::findExecutable('php', self::PHP_PATH);
@@ -129,7 +139,7 @@ class QuickGV {
 
 			// 執行 dot, 產生 svg 圖檔
 			$cmd = sprintf('%s -Tsvg > %s',
-				escapeshellarg($dotcmd),  // dot fullpath
+				escapeshellarg(self::$dotcmd),  // dot fullpath
 				escapeshellarg($svgfile)  // stdout
 			);
 			$retval = self::pipeExec($cmd, $dotcode, $out, $err, 'utf-8');
@@ -194,28 +204,20 @@ class QuickGV {
 		$html  = sprintf('<p><embed type="image/svg+xml" src="%s?t=%d" style="border:1px solid #777;" /></p>', $svgurl, $mtime);
 
 		if ($showmeta==='true') {
-			// 取 Graphviz 版本資訊 (需要獨立 function)
-			$cmd = sprintf('%s -V', escapeshellarg($dotcmd));
-			self::pipeExec($cmd, '', $out, $err);
-			$verstr = trim($err);
-			$verpos = strpos($verstr,'version')+8;
-			$verstr = substr($verstr,$verpos);
-
 			// 取人性化的檔案大小
 			$size = self::getFriendlySize(filesize($svgfile));
-
 			$table_html = array();
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filepath'), $svgurl);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filesize')->plain(), $size);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('filemtime')->plain(), date('Y-m-d H:i:s',$mtime));
-			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%.3f %s</td></tr>', wfMessage('exectime')->plain(), $elapsed, wfMessage('seconds')->plain());
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%.3f seconds</td></tr>', wfMessage('exectime')->plain(), $elapsed);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('md5sum')->plain(), $sum_curr);
-			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), $dotcmd);
-			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), $verstr);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-path')->plain(), self::$dotcmd);
+			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s</td></tr>', wfMessage('graphviz-ver')->plain(), self::$gvzver);
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;"><a href="%s" target="_blank">%2$s</a></td></tr>', wfMessage('graphviz-ref')->plain(), 'http://www.graphviz.org/doc/info/attrs.html');
 			$table_html[] = sprintf('<tr><th style="white-space:nowrap;">%s</th><td style="text-align:left;">%s - <a href="https://www.mediawiki.org/wiki/Extension:QuickGV" target="_blank">%s</a></td></tr>', wfMessage('quickgv-ver')->plain(), self::$version, wfMessage('quickgv-about')->plain());
 			$table_html = implode("\n", $table_html);
-			$table_html = sprintf('<table class="mw_metadata" style="width:600px; margin:5px 0 0 0;"><tbody>%s</tbody></table>',$table_html);
+			$table_html = sprintf('<table class="wikitable" style="width:600px; margin:5px 0 0 0;"><tbody>%s</tbody></table>',$table_html);
 			$html .= $table_html;
 			unset($table_html);
 		}
